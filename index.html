@@ -5,132 +5,299 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Food Waste Tracking and Redistribution Portal</title>
+
   <style>
-    * { box-sizing: border-box; }
+    * {
+      box-sizing: border-box;
+    }
+
     body {
       margin: 0;
       font-family: Arial, sans-serif;
       background: #f3f6f4;
       color: #20312a;
     }
+
     header {
       background: #176b45;
       color: white;
       padding: 24px 6%;
     }
-    header h1 { margin: 0 0 8px; }
-    main { padding: 24px 6%; }
+
+    header h1 {
+      margin: 0 0 10px;
+    }
+
+    main {
+      padding: 24px 6%;
+    }
+
     .intro, .dashboard, .food-card {
       background: white;
       border-radius: 10px;
       padding: 18px;
       box-shadow: 0 2px 8px #0000000c;
     }
+
     .dashboard {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-      gap: 12px;
+      gap: 14px;
       margin: 20px 0;
     }
-    .metric { font-size: 28px; font-weight: bold; color: #176b45; }
+
+    .metric {
+      font-size: 28px;
+      font-weight: bold;
+      color: #176b45;
+      margin-bottom: 5px;
+    }
+
     .cards {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
       gap: 16px;
       margin-top: 16px;
     }
-    .food-card h3 { margin-top: 0; }
+
+    .food-card h3 {
+      margin-top: 0;
+      color: #176b45;
+    }
+
     .status {
       display: inline-block;
       border-radius: 16px;
-      padding: 5px 10px;
+      padding: 6px 11px;
       background: #e6f4ea;
       color: #176b45;
       font-size: 13px;
       font-weight: bold;
     }
-    .Reserved { background: #fff1d6; color: #8a5900; }
-    .Collected { background: #dcecff; color: #164e91; }
-    .Redistributed { background: #e9ddff; color: #6334a0; }
-    footer { padding: 20px; text-align: center; color: #56645d; }
+
+    .Reserved {
+      background: #fff1d6;
+      color: #8a5900;
+    }
+
+    .Collected {
+      background: #dcecff;
+      color: #164e91;
+    }
+
+    .Redistributed {
+      background: #e9ddff;
+      color: #6334a0;
+    }
+
+    label {
+      font-weight: bold;
+    }
+
+    select {
+      padding: 9px;
+      margin: 10px 0;
+      border: 1px solid #b8c7bd;
+      border-radius: 5px;
+      background: white;
+    }
+
+    footer {
+      padding: 20px;
+      text-align: center;
+      color: #56645d;
+    }
   </style>
 </head>
+
 <body>
+
 <header>
-  <h1>Food Waste Tracking & Redistribution Portal</h1>
-  <p>Connect surplus food with community organizations before it goes to waste.</p>
+  <h1>Food Waste Tracking and Redistribution Portal</h1>
+  <p>Connecting surplus food with community organizations before it goes to waste.</p>
 </header>
 
 <main>
+
   <section class="intro">
-    <h2>Available Surplus Food</h2>
-    <p>Authorized community organizations can review food quantities,
-       collection deadlines, pickup locations and redistribution status.</p>
+    <h2>About the Portal</h2>
+    <p>
+      This portal helps authorized community organizations identify surplus
+      food, check collection deadlines, view available quantities, and track
+      the redistribution process.
+    </p>
   </section>
 
-  <section class="dashboard" aria-label="Redistribution summary">
-    <div><div class="metric" id="available">3</div>Available records</div>
-    <div><div class="metric" id="reserved">1</div>Reserved records</div>
-    <div><div class="metric" id="collected">1</div>Collected records</div>
-    <div><div class="metric" id="redistributed">0</div>Redistributed records</div>
-    <div><div class="metric" id="quantity">0 kg</div>Available quantity</div>
+  <h2>Redistribution Status Dashboard</h2>
+
+  <section class="dashboard">
+    <div>
+      <div class="metric" id="available">0</div>
+      Available Records
+    </div>
+
+    <div>
+      <div class="metric" id="reserved">0</div>
+      Reserved Records
+    </div>
+
+    <div>
+      <div class="metric" id="collected">0</div>
+      Collected Records
+    </div>
+
+    <div>
+      <div class="metric" id="redistributed">0</div>
+      Redistributed Records
+    </div>
+
+    <div>
+      <div class="metric" id="quantity">0 kg</div>
+      Quantity Available for Collection
+    </div>
   </section>
 
   <h2>Food Collection Records</h2>
+
+  <label for="statusFilter">Filter by redistribution status:</label>
+
+  <select id="statusFilter" onchange="renderFoods()">
+    <option value="All">All Statuses</option>
+    <option value="Available">Available</option>
+    <option value="Reserved">Reserved</option>
+    <option value="Collected">Collected</option>
+    <option value="Redistributed">Redistributed</option>
+  </select>
+
   <div class="cards" id="foodRecords"></div>
+
 </main>
 
-<footer>University & Community Food Redistribution Initiative</footer>
+<footer>
+  University and Community Food Redistribution Initiative
+</footer>
 
 <script>
-const foods = [
-  {food:"Vegetable Rice", source:"University Canteen", qty:25,
-   deadline:"2026-10-22 12:30", location:"Canteen Gate A",
-   org:"Helping Hands", status:"Available"},
-  {food:"Bread and Buns", source:"Sunrise Bakery", qty:12,
-   deadline:"2026-10-22 11:30", location:"Restaurant Rear Entrance",
-   org:"Hope Community Centre", status:"Reserved"},
-  {food:"Fresh Vegetables", source:"Green Bowl Restaurant", qty:18,
-   deadline:"2026-10-22 13:00", location:"Loading Bay 2",
-   org:"Community Food Bank", status:"Available"},
-  {food:"Packed Lunches", source:"University Canteen", qty:30,
-   deadline:"2026-10-22 12:00", location:"Student Block Pickup Desk",
-   org:"Helping Hands", status:"Collected"},
-  {food:"Cooked Lentils", source:"Annapoorna Restaurant", qty:20,
-   deadline:"2026-10-22 14:00", location:"Main Entrance",
-   org:"Neighbourhood Care", status:"Available"}
-];
+  const foods = [
+    {
+      food: "Vegetable Rice",
+      source: "University Canteen",
+      qty: 25,
+      deadline: "2026-10-22 12:30",
+      location: "Canteen Gate A",
+      org: "Helping Hands",
+      status: "Available"
+    },
+    {
+      food: "Bread and Buns",
+      source: "Sunrise Bakery",
+      qty: 12,
+      deadline: "2026-10-22 11:30",
+      location: "Restaurant Rear Entrance",
+      org: "Hope Community Centre",
+      status: "Reserved"
+    },
+    {
+      food: "Fresh Vegetables",
+      source: "Green Bowl Restaurant",
+      qty: 18,
+      deadline: "2026-10-22 13:00",
+      location: "Loading Bay 2",
+      org: "Community Food Bank",
+      status: "Available"
+    },
+    {
+      food: "Packed Lunches",
+      source: "University Canteen",
+      qty: 30,
+      deadline: "2026-10-22 12:00",
+      location: "Student Block Pickup Desk",
+      org: "Helping Hands",
+      status: "Collected"
+    },
+    {
+      food: "Cooked Lentils",
+      source: "Annapoorna Restaurant",
+      qty: 20,
+      deadline: "2026-10-22 14:00",
+      location: "Main Entrance",
+      org: "Neighbourhood Care",
+      status: "Available"
+    }
+  ];
 
-function renderFoods() {
-  const counts = {Available:0, Reserved:0, Collected:0, Redistributed:0};
-  let availableKg = 0;
+  function renderFoods() {
+    const counts = {
+      Available: 0,
+      Reserved: 0,
+      Collected: 0,
+      Redistributed: 0
+    };
 
-  foods.forEach(f => {
-    counts[f.status]++;
-    if (f.status === "Available") availableKg += f.qty;
-  });
+    let availableKg = 0;
 
-  document.getElementById("available").textContent = counts.Available;
-  document.getElementById("reserved").textContent = counts.Reserved;
-  document.getElementById("collected").textContent = counts.Collected;
-  document.getElementById("redistributed").textContent = counts.Redistributed;
-  document.getElementById("quantity").textContent = availableKg + " kg";
+    foods.forEach(function(food) {
+      counts[food.status]++;
 
-  document.getElementById("foodRecords").innerHTML = foods.map(f => `
-    <article class="food-card">
-      <h3>${f.food}</h3>
-      <p><b>Contributor:</b> ${f.source}</p>
-      <p><b>Quantity:</b> ${f.qty} kg</p>
-      <p><b>Collection deadline:</b> ${f.deadline}</p>
-      <p><b>Pickup:</b> ${f.location}</p>
-      <p><b>Organization:</b> ${f.org}</p>
-      <p><b>Status:</b> <span class="status ${f.status}">
-        ${f.status}</span></p>
-    </article>
-  `).join("");
-}
+      if (food.status === "Available") {
+        availableKg += food.qty;
+      }
+    });
 
-renderFoods();
+    document.getElementById("available").textContent =
+      counts.Available;
+
+    document.getElementById("reserved").textContent =
+      counts.Reserved;
+
+    document.getElementById("collected").textContent =
+      counts.Collected;
+
+    document.getElementById("redistributed").textContent =
+      counts.Redistributed;
+
+    document.getElementById("quantity").textContent =
+      availableKg + " kg";
+
+    const filter = document.getElementById("statusFilter").value;
+
+    const filteredFoods = foods.filter(function(food) {
+      return filter === "All" || food.status === filter;
+    });
+
+    document.getElementById("foodRecords").innerHTML =
+      filteredFoods.map(function(food) {
+        return `
+          <article class="food-card">
+            <h3>${food.food}</h3>
+
+            <p><strong>Contributing Restaurant/Canteen:</strong>
+              ${food.source}</p>
+
+            <p><strong>Estimated Quantity:</strong>
+              ${food.qty} kg</p>
+
+            <p><strong>Collection Deadline:</strong>
+              ${food.deadline}</p>
+
+            <p><strong>Pickup Location:</strong>
+              ${food.location}</p>
+
+            <p><strong>Participating Organization:</strong>
+              ${food.org}</p>
+
+            <p><strong>Redistribution Status:</strong>
+              <span class="status ${food.status}">
+                ${food.status}
+              </span>
+            </p>
+          </article>
+        `;
+      }).join("");
+  }
+
+  renderFoods();
 </script>
+
 </body>
 </html>
