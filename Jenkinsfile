@@ -39,14 +39,14 @@ pipeline {
                 stage('HTML and File Validation') {
                     steps {
                         script {
-                            def files = [
+                            def requiredFiles = [
                                 'index.html',
                                 'Dockerfile',
                                 'Jenkinsfile',
                                 'deployment.yaml'
                             ]
 
-                            for (def f : files) {
+                            for (def f : requiredFiles) {
                                 if (!fileExists(f)) {
                                     error("Required file missing: ${f}")
                                 }
@@ -62,14 +62,14 @@ pipeline {
                         script {
                             def html = readFile('index.html').toLowerCase()
 
-                            def required = [
+                            def requiredContent = [
                                 'vegetable rice',
                                 'bread and buns',
                                 'collection deadline',
                                 'redistribution'
                             ]
 
-                            for (def item : required) {
+                            for (def item : requiredContent) {
                                 if (!html.contains(item)) {
                                     error("Content test failed: ${item}")
                                 }
@@ -101,7 +101,7 @@ pipeline {
 
                     withCredentials([
                         usernamePassword(
-                            credentialsId: 'dockerhub-foodwaste',
+                            credentialsId: 'dockerhub-foodwaste-2026',
                             usernameVariable: 'DOCKER_USER',
                             passwordVariable: 'DOCKER_PASS'
                         )
