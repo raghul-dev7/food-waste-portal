@@ -1,0 +1,136 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Food Waste Tracking and Redistribution Portal</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f3f6f4;
+      color: #20312a;
+    }
+    header {
+      background: #176b45;
+      color: white;
+      padding: 24px 6%;
+    }
+    header h1 { margin: 0 0 8px; }
+    main { padding: 24px 6%; }
+    .intro, .dashboard, .food-card {
+      background: white;
+      border-radius: 10px;
+      padding: 18px;
+      box-shadow: 0 2px 8px #0000000c;
+    }
+    .dashboard {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 12px;
+      margin: 20px 0;
+    }
+    .metric { font-size: 28px; font-weight: bold; color: #176b45; }
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 16px;
+      margin-top: 16px;
+    }
+    .food-card h3 { margin-top: 0; }
+    .status {
+      display: inline-block;
+      border-radius: 16px;
+      padding: 5px 10px;
+      background: #e6f4ea;
+      color: #176b45;
+      font-size: 13px;
+      font-weight: bold;
+    }
+    .Reserved { background: #fff1d6; color: #8a5900; }
+    .Collected { background: #dcecff; color: #164e91; }
+    .Redistributed { background: #e9ddff; color: #6334a0; }
+    footer { padding: 20px; text-align: center; color: #56645d; }
+  </style>
+</head>
+<body>
+<header>
+  <h1>Food Waste Tracking & Redistribution Portal</h1>
+  <p>Connect surplus food with community organizations before it goes to waste.</p>
+</header>
+
+<main>
+  <section class="intro">
+    <h2>Available Surplus Food</h2>
+    <p>Authorized community organizations can review food quantities,
+       collection deadlines, pickup locations and redistribution status.</p>
+  </section>
+
+  <section class="dashboard" aria-label="Redistribution summary">
+    <div><div class="metric" id="available">3</div>Available records</div>
+    <div><div class="metric" id="reserved">1</div>Reserved records</div>
+    <div><div class="metric" id="collected">1</div>Collected records</div>
+    <div><div class="metric" id="redistributed">0</div>Redistributed records</div>
+    <div><div class="metric" id="quantity">0 kg</div>Available quantity</div>
+  </section>
+
+  <h2>Food Collection Records</h2>
+  <div class="cards" id="foodRecords"></div>
+</main>
+
+<footer>University & Community Food Redistribution Initiative</footer>
+
+<script>
+const foods = [
+  {food:"Vegetable Rice", source:"University Canteen", qty:25,
+   deadline:"2026-10-22 12:30", location:"Canteen Gate A",
+   org:"Helping Hands", status:"Available"},
+  {food:"Bread and Buns", source:"Sunrise Bakery", qty:12,
+   deadline:"2026-10-22 11:30", location:"Restaurant Rear Entrance",
+   org:"Hope Community Centre", status:"Reserved"},
+  {food:"Fresh Vegetables", source:"Green Bowl Restaurant", qty:18,
+   deadline:"2026-10-22 13:00", location:"Loading Bay 2",
+   org:"Community Food Bank", status:"Available"},
+  {food:"Packed Lunches", source:"University Canteen", qty:30,
+   deadline:"2026-10-22 12:00", location:"Student Block Pickup Desk",
+   org:"Helping Hands", status:"Collected"},
+  {food:"Cooked Lentils", source:"Annapoorna Restaurant", qty:20,
+   deadline:"2026-10-22 14:00", location:"Main Entrance",
+   org:"Neighbourhood Care", status:"Available"}
+];
+
+function renderFoods() {
+  const counts = {Available:0, Reserved:0, Collected:0, Redistributed:0};
+  let availableKg = 0;
+
+  foods.forEach(f => {
+    counts[f.status]++;
+    if (f.status === "Available") availableKg += f.qty;
+  });
+
+  document.getElementById("available").textContent = counts.Available;
+  document.getElementById("reserved").textContent = counts.Reserved;
+  document.getElementById("collected").textContent = counts.Collected;
+  document.getElementById("redistributed").textContent = counts.Redistributed;
+  document.getElementById("quantity").textContent = availableKg + " kg";
+
+  document.getElementById("foodRecords").innerHTML = foods.map(f => `
+    <article class="food-card">
+      <h3>${f.food}</h3>
+      <p><b>Contributor:</b> ${f.source}</p>
+      <p><b>Quantity:</b> ${f.qty} kg</p>
+      <p><b>Collection deadline:</b> ${f.deadline}</p>
+      <p><b>Pickup:</b> ${f.location}</p>
+      <p><b>Organization:</b> ${f.org}</p>
+      <p><b>Status:</b> <span class="status ${f.status}">
+        ${f.status}</span></p>
+    </article>
+  `).join("");
+}
+
+renderFoods();
+</script>
+</body>
+</html>
