@@ -12,7 +12,7 @@ pipeline {
         booleanParam(
             name: 'FAULTY_RELEASE',
             defaultValue: false,
-            description: 'Check only to demonstrate failed deployment and automatic rollback.'
+            description: 'Check to demonstrate a faulty release and automatic rollback.'
         )
     }
 
@@ -36,25 +36,24 @@ pipeline {
 
         stage('2. Parallel Validation') {
             parallel {
-
                 stage('HTML and File Validation') {
                     steps {
                         script {
-                            def requiredFiles = [
+                            def files = [
                                 'index.html',
                                 'Dockerfile',
                                 'Jenkinsfile',
                                 'deployment.yaml'
                             ]
 
-                            for (def f : requiredFiles) {
+                            for (def f : files) {
                                 if (!fileExists(f)) {
-                                    error("Required file is missing: ${f}")
+                                    error("Required file missing: ${f}")
                                 }
                             }
                         }
 
-                        echo 'All required project files exist.'
+                        echo 'All required files exist.'
                     }
                 }
 
@@ -63,21 +62,21 @@ pipeline {
                         script {
                             def html = readFile('index.html').toLowerCase()
 
-                            def requiredContent = [
+                            def required = [
                                 'vegetable rice',
                                 'bread and buns',
                                 'collection deadline',
                                 'redistribution'
                             ]
 
-                            for (def item : requiredContent) {
+                            for (def item : required) {
                                 if (!html.contains(item)) {
-                                    error("Portal content test failed: ${item}")
+                                    error("Content test failed: ${item}")
                                 }
                             }
                         }
 
-                        echo 'Food records and portal content verified.'
+                        echo 'Food portal content verified.'
                     }
                 }
             }
@@ -89,6 +88,8 @@ pipeline {
                     artifacts: 'index.html,Dockerfile,Jenkinsfile,deployment.yaml',
                     fingerprint: true
                 )
+
+                echo 'Application files archived.'
             }
         }
 
@@ -100,7 +101,7 @@ pipeline {
 
                     withCredentials([
                         usernamePassword(
-                            credentialsId: 'dockerhub',
+                            credentialsId: 'dockerhub-foodwaste',
                             usernameVariable: 'DOCKER_USER',
                             passwordVariable: 'DOCKER_PASS'
                         )
@@ -115,12 +116,15 @@ pipeline {
                         bat """
                             docker build --build-arg FAULTY_RELEASE=${faulty} -t ${DOCKER_IMAGE}:${imageTag} .
                             if errorlevel 1 exit /b 1
+
                             docker push ${DOCKER_IMAGE}:${imageTag}
                             if errorlevel 1 exit /b 1
                         """
                     }
 
-                    echo "Docker image pushed: ${DOCKER_IMAGE}:${imageTag}"
+                    env.NEW_IMAGE = "${DOCKER_IMAGE}:${imageTag}"
+
+                    echo "Docker image pushed: ${env.NEW_IMAGE}"
                 }
             }
         }
@@ -142,7 +146,7 @@ pipeline {
                     ).trim()
 
                     if (!env.PREVIOUS_IMAGE) {
-                        error('Could not determine the previous Kubernetes image.')
+                        error('Could not find the previous Kubernetes image.')
                     }
 
                     echo "Previous image: ${env.PREVIOUS_IMAGE}"
@@ -152,23 +156,19 @@ pipeline {
 
         stage('6. Deploy to Kubernetes') {
             steps {
-                script {
-                    def imageTag = "build-${env.BUILD_NUMBER}"
+                bat """
+                    kubectl set image deployment/${K8S_DEPLOYMENT} ${K8S_CONTAINER}=${env.NEW_IMAGE} -n ${K8S_NAMESPACE}
+                    if errorlevel 1 exit /b 1
+                """
 
-                    bat """
-                        kubectl set image deployment/${K8S_DEPLOYMENT} ${K8S_CONTAINER}=${DOCKER_IMAGE}:${imageTag} -n ${K8S_NAMESPACE}
-                        if errorlevel 1 exit /b 1
-                    """
-
-                    echo "Deploying ${DOCKER_IMAGE}:${imageTag}"
-                }
+                echo 'New image submitted to Kubernetes.'
             }
         }
 
-        stage('7. Verify Deployment Health') {
+        stage('7. Verify Deployment and Roll Back if Needed') {
             steps {
                 script {
-                    int rolloutStatus = bat(
+                    int status = bat(
                         script: """
                             @echo off
                             kubectl rollout status deployment/${K8S_DEPLOYMENT} -n ${K8S_NAMESPACE} --timeout=90s
@@ -176,20 +176,21 @@ pipeline {
                         returnStatus: true
                     )
 
-                    if (rolloutStatus != 0) {
-                        echo 'Deployment health check failed. Starting automatic rollback.'
+                    if (status != 0) {
+                        echo 'Deployment failed. Restoring previous image.'
 
                         bat """
-                            kubectl rollout undo deployment/${K8S_DEPLOYMENT} -n ${K8S_NAMESPACE}
+                            kubectl set image deployment/${K8S_DEPLOYMENT} ${K8S_CONTAINER}=${env.PREVIOUS_IMAGE} -n ${K8S_NAMESPACE}
                             if errorlevel 1 exit /b 1
+
                             kubectl rollout status deployment/${K8S_DEPLOYMENT} -n ${K8S_NAMESPACE} --timeout=90s
                             if errorlevel 1 exit /b 1
                         """
 
-                        error('New deployment failed. Rollback completed.')
+                        error('Faulty deployment detected. Previous image restored.')
                     }
 
-                    echo 'Kubernetes rollout is healthy.'
+                    echo 'Deployment rollout succeeded.'
                 }
             }
         }
@@ -197,23 +198,23 @@ pipeline {
         stage('8. Final Verification') {
             steps {
                 bat """
-                    kubectl get deployments ${K8S_DEPLOYMENT} -n ${K8S_NAMESPACE}
-                    kubectl get pods -n ${K8S_NAMESPACE} -o wide
+                    kubectl get deployment ${K8S_DEPLOYMENT} -n ${K8S_NAMESPACE}
+                    kubectl get pods -n ${K8S_NAMESPACE}
                     kubectl get service food-waste-portal-service -n ${K8S_NAMESPACE}
                 """
 
-                echo 'Food Waste Portal deployment verification completed.'
+                echo 'Final Kubernetes verification completed.'
             }
         }
     }
 
     post {
         success {
-            echo 'PIPELINE SUCCESS: Food Waste Portal deployed successfully.'
+            echo 'SUCCESS: Food Waste Portal deployed successfully.'
         }
 
         failure {
-            echo 'PIPELINE FAILED: Check the console output for the failed stage.'
+            echo 'FAILURE: Check Console Output for the failed stage.'
         }
 
         always {
