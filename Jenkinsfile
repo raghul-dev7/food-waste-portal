@@ -20,7 +20,7 @@ pipeline {
         stage('1. Clone GitHub Repository') {
             steps {
                 git branch: 'main',
-                    url: 'https://github.com/YOUR_GITHUB_USERNAME/food-waste-redistribution-portal.git'
+                    url: 'https://github.com/raghul-dev7/food-waste-portal.git'
             }
         }
 
@@ -163,3 +163,4 @@ pipeline {
         }
     }
 }
+
